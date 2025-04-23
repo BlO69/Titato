@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe 100x100</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(20, 30px);
+      grid-template-rows: repeat(20, 30px);
+      gap: 1px;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      background: #eee;
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .taken { cursor: default; background: #ccc; }
+    button { margin: 5px; }
+  </style>
+</head>
+<body>
+
+<h2>Tic Tac Toe - 5 alignés pour gagner</h2>
+<div id="scores">
+  <p>Joueur X : <span id="scoreX">0</span> | Joueur O : <span id="scoreO">0</span></p>
+</div>
+
+<div>
+  <button onclick="restartGame()">Nouvelle Partie</button>
+  <button onclick="scrollView(-1, 0)">↑</button>
+  <button onclick="scrollView(1, 0)">↓</button>
+  <button onclick="scrollView(0, -1)">←</button>
+  <button onclick="scrollView(0, 1)">→</button>
+</div>
+
+<div id="board"></div>
+
+<script>
+  const size = 100;
+  const winLength = 5;
+  const viewSize = 20;
+  let offsetX = 0, offsetY = 0;
+  let board = Array.from({ length: size }, () => Array(size).fill(''));
+  let currentPlayer = 'X';
+  let score = { X: 0, O: 0 };
+  let gameOver = false;
+
+  const boardDiv = document.getElementById('board');
+
+  function renderBoard() {
+    boardDiv.innerHTML = '';
+    for (let y = 0; y < viewSize; y++) {
+      for (let x = 0; x < viewSize; x++) {
+        const gx = x + offsetX;
+        const gy = y + offsetY;
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (board[gy][gx] !== '') cell.classList.add('taken');
+        cell.textContent = board[gy][gx];
+        cell.addEventListener('click', () => playMove(gx, gy));
+        boardDiv.appendChild(cell);
+      }
+    }
+  }
+
+  function playMove(x, y) {
+    if (gameOver || board[y][x]) return;
+    board[y][x] = currentPlayer;
+    if (checkWin(x, y)) {
+      alert(`Joueur ${currentPlayer} gagne !`);
+      score[currentPlayer]++;
+      updateScores();
+      gameOver = true;
+      return;
+    }
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    renderBoard();
+  }
+
+  function checkWin(x, y) {
+    const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+    for (const [dx, dy] of dirs) {
+      let count = 1;
+      for (let dir of [-1, 1]) {
+        let i = 1;
+        while (true) {
+          const nx = x + dx*i*dir, ny = y + dy*i*dir;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) break;
+          if (board[ny][nx] === currentPlayer) count++;
+          else break;
+          i++;
+        }
+      }
+      if (count >= winLength) return true;
+    }
+    return false;
+  }
+
+  function scrollView(dy, dx) {
+    offsetX = Math.max(0, Math.min(size - viewSize, offsetX + dx));
+    offsetY = Math.max(0, Math.min(size - viewSize, offsetY + dy));
+    renderBoard();
+  }
+
+  function updateScores() {
+    document.getElementById('scoreX').textContent = score.X;
+    document.getElementById('scoreO').textContent = score.O;
+  }
+
+  function restartGame() {
+    board = Array.from({ length: size }, () => Array(size).fill(''));
+    gameOver = false;
+    renderBoard();
+  }
+
+  renderBoard();
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW enregistré'))
+      .catch(e => console.log('Erreur SW:', e));
+  }
+</script>
+
+</body>
+</html>
